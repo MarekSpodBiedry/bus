@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bus Number Lookup Database</title>
+  <link rel="icon" href="bus.svg">
+  <script>
+    window.MathJax = {
+    options: {
+        renderActions: {
+        addMenu: [] // Disable the Mathjax menu
+        }
+    }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+body {
+    margin: 0;
+    background-color: #f4f4f4;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    padding: 30px;
+    width: 400px;
+    text-align: center;
+}
+
+.logo {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #ccc;
+}
+
+input[type="number"] {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    outline: none;
+    font-size: 1em;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+button {
+    padding: 10px 16px;
+    background-color: #333;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+.links a,
+.random {
+    margin: 0 10px;
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.popupOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popupContent {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    position: relative;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    margin: 10px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.popupContent::-webkit-scrollbar {
+    display: none;
+}
+
+.closePopup {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.external-link {
+    color: #007bff;
+    text-decoration: none;
+    background-image: url('external-link.svg');
+    background-position: center right;
+    background-repeat: no-repeat;
+    background-size: 0.857em;
+    padding-right: 1em;
+}
+
+.random {
+    margin-left: 10px;
+    font-size: 1.6rem;
+    color: #000;
+    text-decoration: none;
+    background-image: url('random.svg');
+    background-position: center right;
+    background-repeat: no-repeat;
+    background-size: 0.857em;
+    padding-right: 1em;
+}
+
+ul {
+    list-style-type: none;
+}
+
+li::before {
+    content: "•";
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em;
+}
+
+.customSelect {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1em;
+    width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    background-color: #f9f9f9;
+}
+
+  </style>
+</head>
+<body>
+<div class="container">
+<div class="logo">Lookup Database<a class="random" id="random"></a></div>
+
+<div class="input-group">
+    <input type="number" id="numberInput" min="1000" max="2999" placeholder="Enter number..." autofocus>
+    <button onclick="lookupNumber()">Go</button>
+</div>
+
+<div class="links">
+    <a id="info">Info</a>
+    <a id="math">Math</a>
+    <a id="modes">Modes</a>
+    <a href="bus.csv">CSV</a>
+    <a id="unsolved">Unsolved</a>
+    <a id="authors">Authors</a>
+</div>
+</div>
+
+<div id="popupOverlay" class="popupOverlay">
+<div class="popupContent">
+    <button class="closePopup">&times;</button>
+    <div id="popup-content"></div>
+</div>
+</div>
+
+<script>
+// Wonky, only working for this application, but it works
+// Converts a string expression from my format into LaTeX format
+function toLatex(expr) {
+  const superscriptDigits = {
+    "⁰": "0",
+    "¹": "1",
+    "²": "2",
+    "³": "3",
+    "⁴": "4",
+    "⁵": "5",
+    "⁶": "6",
+    "⁷": "7",
+    "⁸": "8",
+    "⁹": "9",
+  };
+
+  function decodeSuperscript(s) {
+    return s
+      .split("")
+      .map((c) => superscriptDigits[c] || c)
+      .join("");
+  }
+
+  function removeUnnecessaryParens(s) {
+    return s.replace(/(?<!\w)\((\d+)\)(?!\w|\s*[\^!])/g, "$1");
+  }
+
+  function fixExponents(e) {
+    while (
+      /([\w]+|\([^()]+\))\^([\w]+|\([^()]+\))(\^([\w]+|\([^()]+\)))+/.test(e)
+    ) {
+      e = e.replace(
+        /([\w]+|\([^()]+\))\^((?:[\w]+|\([^()]+\))(?:\^[\w]+|\^\([^()]+\))+)/g,
+        (_, base, exp) => `${base}^{${fixExponents(exp)}}`
+      );
+    }
+    return e.replace(/([\w]+|\([^()]+\))\^([\w]+|\([^()]+\))/g, "$1^{$2}");
+  }
+
+  function fixFractions(e) {
+    return e.replace(
+      /(\d+|\w+|\([^()]+\))\/(\d+|\w+|\([^()]+\))/g,
+      (_, num, den) => `\\frac{${num}}{${den}}`
+    );
+  }
+
+  function fixRoots(e) {
+    // Handle nth roots first (like ³√9)
+    e = e.replace(
+      /([⁰¹²³⁴⁵⁶⁷⁸⁹])√(\([^()]*\)|\w+|\d+)/g,
+      function (_, root, inner) {
+        const decoded = decodeSuperscript(root);
+        const content = simplifyAll(inner.replace(/^\(|\)$/g, ""));
+        return `\\sqrt[${decoded}]{${content}}`;
+      }
+    );
+
+    // Repeatedly apply square roots from inside out
+    let prev;
+    do {
+      prev = e;
+      e = e.replace(/√(\([^()]*\)|\w+|\d+)/g, function (_, inner) {
+        const content = simplifyAll(inner.replace(/^\(|\)$/g, ""));
+        return `\\sqrt{${content}}`;
+      });
+    } while (e !== prev);
+
+    return e;
+  }
+
+  function fixMultiplication(expr) {
+    // Remove all spaces around * for easier processing
+    expr = expr.replace(/\s*\*\s*/g, "*");
+
+    // Replace letter * number or number * letter with concatenation (remove the *)
+    expr = expr.replace(/([a-zA-Z])\*([0-9])/g, "$2$1"); // a*4 -> 4a
+    expr = expr.replace(/([0-9])\*([a-zA-Z])/g, "$1$2"); // 3*x -> 3x
+
+    // Replace letter * letter with concatenation (remove the *)
+    expr = expr.replace(/([a-zA-Z])\*([a-zA-Z])/g, "$1$2"); // a*b -> ab
+
+    // For other * (like between parentheses or numbers) replace with \cdot and space after
+    // This includes cases like: number * number, (expr) * number, etc.
+    expr = expr.replace(/\*/g, "\\cdot ");
+
+    return expr;
+  }
+
+  function simplifyAll(s) {
+    s = removeUnnecessaryParens(s);
+    s = fixExponents(s);
+    s = fixRoots(s);
+    s = fixFractions(s);
+    s = s.replace(/([\w]+|\))!/g, "$1!");
+    s = fixMultiplication(s);
+    return s;
+  }
+
+  return simplifyAll(expr);
+}
+
+let data = [];
+
+// Get CSV data
+fetch("bus.csv")
+  .then((response) => response.text())
+  .then((csvText) => {
+    const lines = csvText.trim().split("\n");
+    const headers = lines.shift().split(",");
+    data = lines.map((line) => {
+      const values = line.split(",");
+      const obj = {};
+      headers.forEach((h, i) => (obj[h.trim()] = values[i].trim()));
+      return obj;
+    });
+  });
+
+// Function to lookup number and display result
+function lookupNumber() {
+  const input = document.getElementById("numberInput");
+  const val = input.value.trim();
+  const entry = data.find((row) => row.number === val);
+
+  if (!val || isNaN(val) || val < 1000 || val > 2999) {
+    showPopup("Please enter a valid number between 1000 and 2999.");
+    return;
+  }
+
+  if (!entry) {
+    showPopup(`<strong>${val}</strong> not found.`);
+    return;
+  }
+
+  if (entry.solved === "TRUE") {
+    const latex = `\\( ${toLatex(entry.solution)} \\)`;
+    showPopup(latex);
+    MathJax.typesetPromise();
+  } else {
+    showPopup(
+      `<strong>This one is still unsolved. Got any ideas? Reach out to me!</strong>`
+    );
+  }
+}
+
+// Show and create popups
+function showPopup(content, center = false) {
+  const popupContainer = document.getElementById("popup-content");
+  popupContainer.innerHTML = ""; // Clear previous
+
+  if (typeof content === "string") {
+    popupContainer.innerHTML = content;
+  } else {
+    popupContainer.appendChild(content); // Allow DOM elements
+  }
+
+  if (center) {
+    popupContainer.style.textAlign = "center";
+  } else {
+    popupContainer.style.textAlign = "left";
+  }
+
+  document.getElementById("popupOverlay").style.display = "flex";
+}
+
+// Close popups
+let closureImmunity = false;
+document.querySelectorAll(".popupOverlay").forEach((overlay) => {
+  const content = overlay.querySelector(".popupContent");
+  const closeBtn = overlay.querySelector(".closePopup");
+
+  closeBtn.addEventListener("click", () => {
+    if (!closureImmunity) {
+    overlay.style.display = "none";
+    if (randomShown) {
+      hideRandom();
+    }}
+  });
+
+  overlay.addEventListener("click", (e) => {
+    if (!content.contains(e.target)) {
+      if (!closureImmunity) {
+      overlay.style.display = "none";
+      if (randomShown) {
+        hideRandom();
+      }}
+    }
+  });
+});
+
+// Key-presses
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape") {
+    const closeBtn = document
+      .getElementById("popupOverlay")
+      .querySelector(".closePopup");
+    if (closeBtn) closeBtn.click();
+  } else if (event.key === "Enter") {
+    const input = document.getElementById("numberInput");
+    if (document.activeElement === input) {
+      lookupNumber();
+    } else if (randomShown) {
+      hideRandom();
+    }
+  }
+});
+
+// Menus
+let lastSelectedMode = "random";
+let randomShown = false;
+function hideRandom() {
+  const selectedMode = document.getElementById("modeSelect").value;
+  lastSelectedMode = selectedMode;
+  document.getElementById("popupOverlay").style.display = "none";
+  randomShown = false;
+}
+function randomButton() {
+  const selectedMode = document.getElementById("modeSelect").value;
+
+  lastSelectedMode = selectedMode;
+
+  if (data.length === 0) {
+    alert("Data still loading, please try again shortly.");
+    return;
+  }
+
+  const easy = [1, 2, 3, 4];
+  const medium = [5, 6, 7, 8, 9, 10, 11, 15];
+  const hard = [12, 14, 16, 17];
+  const extreme = [13, 18];
+
+  let allowedModes;
+  switch (selectedMode) {
+    case "easy":
+      allowedModes = easy;
+      break;
+    case "medium":
+      allowedModes = medium;
+      break;
+    case "hard":
+      allowedModes = hard;
+      break;
+    case "extreme":
+      allowedModes = extreme;
+      break;
+    default:
+      allowedModes = [...easy, ...medium, ...hard, ...extreme];
+  }
+
+  const eligible = data.filter(
+    (row) =>
+      allowedModes.includes(parseInt(row.mode)) &&
+      !isNaN(parseInt(row.number)) &&
+      row.number.length === 4
+  );
+
+  if (eligible.length === 0) {
+    alert("No entries found for selected difficulty.");
+    return;
+  }
+
+  const randomEntry = eligible[Math.floor(Math.random() * eligible.length)];
+  document.getElementById("numberInput").value = randomEntry.number;
+  hideRandom();
+}
+document.getElementById("random").addEventListener("click", () => {
+  const content = document.createElement("div");
+
+  const label = document.createElement("label");
+  label.innerHTML = "<strong>Choose difficulty:</strong>";
+  content.appendChild(label);
+
+  const select = document.createElement("select");
+  select.id = "modeSelect";
+  select.className = "customSelect";
+
+  const options = ["Random", "Easy", "Medium", "Hard", "EXTREME"];
+  options.forEach((opt) => {
+    const option = document.createElement("option");
+    option.value = opt.toLowerCase();
+    option.textContent = opt;
+    if (opt.toLowerCase() === lastSelectedMode) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+
+  content.appendChild(document.createElement("br"));
+  content.appendChild(document.createElement("br"));
+  content.appendChild(select);
+
+  const btn = document.createElement("button");
+  btn.textContent = "Generate";
+  btn.style.marginTop = "16px";
+  btn.style.borderRadius = "8px";
+
+  btn.onclick = randomButton;
+
+  content.appendChild(btn);
+  showPopup(content, true);
+  randomShown = true;
+
+  if (event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) {
+    randomButton();
+    return;
+  }
+});
+
+function showInfo() {
+  const infoContent = `<h3>Bus numbers</h3>
+    The main objective of the game is to make an equation using all numbers, each exactly once, without adding any new numbers.<br>
+    The allowed operations are:
+    <ul>
+        <li>addition (+)</li>
+        <li>subtraction (-)</li>
+        <li>multiplication (*)</li>
+        <li>division (/)</li>
+        <li>factorial (!)</li>
+        <li>square root (√)</li>
+        <li>n<sup style="font-size: 10px;">th</sup> root (³√, ⁴√, etc.)</li>
+        <li>exponentiation (^)</li>
+        <li>parentheses ({[()]})</li>
+      </ul>
+      It all started with a simple game where we had to make an equation using all and only the digits - each exactly once - from the number of the bus we were on.`;
+  showPopup(infoContent, true);
+}
+function mathToInfo() {
+  //document.querySelector(".popupContent").click();
+  //document.getElementById("info").click();
+
+  closureImmunity = true;
+  document.getElementById("math-inside").innerHTML = `<h3>Bus numbers</h3>
+    The main objective of the game is to make an equation using all numbers, each exactly once, without adding any new numbers.<br>
+    The allowed operations are:
+    <ul>
+        <li>addition (+)</li>
+        <li>subtraction (-)</li>
+        <li>multiplication (*)</li>
+        <li>division (/)</li>
+        <li>factorial (!)</li>
+        <li>square root (√)</li>
+        <li>n<sup style="font-size: 10px;">th</sup> root (³√, ⁴√, etc.)</li>
+        <li>exponentiation (^)</li>
+        <li>parentheses ({[()]})</li>
+      </ul>
+      It all started with a simple game where we had to make an equation using all and only the digits - each exactly once - from the number of the bus we were on.`;
+    document.getElementById("popupOverlay").style.display = "flex";
+    setTimeout(function() {
+      closureImmunity = false;
+    }, 1);
+}
+document.getElementById("info").addEventListener("click", showInfo);
+
+document.getElementById("math").addEventListener("click", () => {
+  const mathContent = `<span id='math-inside'>
+    <h3 style='margin-bottom: 0px;'>Math Proof</h3>
+    <h4>Theory:<br>Any given bus number(1000-2999) can be <strong>solved</strong>(see <a onclick='mathToInfo();'>Info</a>)</h4>
+    Yes, a math proof is coming, but not today. I'm going to leave you with a few lemmas that I came up with while solving the cases, and that I'm going to use in the proof.<br>
+    <ul>
+        <li><strong>Lemma 1:</strong> Any 0 can be ignored \\(\\because x+0=x\\)</li>
+        <li><strong>Lemma 2:</strong> Any 0 can remove any other digit \\(\\because x\\cdot0=0\\)</li>
+        <li><strong>Lemma 3:</strong> Any 0 can be treated as a 1 \\(\\because 0!=1\\)</li>
+        <li><strong>Lemma 4:</strong> Any 1 can be ignored \\(\\because x*1=x\\)</li>
+        <li><strong>Lemma 5:</strong> Any 1 can remove any other digit \\(\\because 1^{x}=1 \\)</li>
+        <li><strong>Lemma 6:</strong> Any positive power of 2 can be ignored \\(\\because \\sqrt{x^2} = |x|, \\space \\sqrt{\\sqrt{x^4}} = |x|...\\)</li>
+        <li><strong>Lemma 7:</strong> Any identical numbers can be simplified into a 1 \\(\\because \\frac{x}{x} = 1\\)</li>
+        <li><strong>Lemma 8:</strong> Any identical numbers can be simplified into an absolute value of one of them \\(\\because \\sqrt{x\\cdot x} = |x|\\)</li>
+        <li><strong>Lemma 9:</strong> If \\( x^n = y \\) where \\( n \\) is even, \\( x \\) and \\( y \\) can be ignored \\(\\because x = \\sqrt{\\sqrt{\\dots \\sqrt{y}}} \\), where the number of square roots is \\( n \\).</li>
+        <li><strong>Lemma 10:</strong> If \\( x \\cdot 2^k = y \\), \\( x \\) and \\( y \\) can be ignored \\(\\because z^x = \\sqrt{\\sqrt{\\dots \\sqrt{z^y}}} \\) where the number of square roots is \\( k \\).</li>
+        <li><strong>Lemma 11:</strong> Any 3 can be turned into a 6 \\(\\because 3!=6\\)</li>
+        <li><strong>Lemma 12:</strong> For any two consecutive integers bigger than 0 we can remove the smaller one \\(\\because \\frac{x!}{(x-1)!} = x \\space \\forall \\, x \\in \\mathbb{Z}^+\\land x \\ne 1 \\)</li></span>`;
+  showPopup(mathContent);
+  MathJax.typesetPromise();
+});
+
+document.getElementById("modes").addEventListener("click", () => {
+  const modes = [
+    "addition",
+    "subtraction",
+    "\\(1^x = 1^y\\)",
+    "addition and subtraction combined",
+    "\\(0! = 1\\)",
+    "factorials, actually solves all mode 7's because of some deeper logic (uses \\(1!\\) or \\(2!\\), which I later change with a simple line)",
+    "all basic operations (+-*/)",
+    "\\(x\\cdot1 = x\\)",
+    "\\(\\sqrt{x^{2}} = |x|\\)",
+    "\\(\\frac{x}{x} = 1\\)",
+    "\\(\\sqrt{}\\) towers",
+    "\\(x^2 = \\sqrt{\\sqrt{x^8}}\\)",
+    "\\(x\\cdot y = z^2 / \\sqrt{x\\cdot y} = z\\)",
+    "\\(\\sqrt{4}\\)",
+    "\\(\\sqrt{x\\cdot x} = x\\)",
+    "\\(3! = 6\\)",
+    "\\(x^{sth\\space bigger} = y\\)",
+    "Martin's mode, which is a combination of all the above, applied manually, advanced, specific to each case",
+  ];
+
+  const Footer = document.createElement("div");
+  Footer.innerHTML = "<h4 style='margin-top: 0px; margin-bottom: 0px;'>These are <strong>not</strong> applied in the ascending order, to optimize the solving speed. This leads to some numbers having solutions more \"complicated\" than needed.</h4>";
+
+  const container = document.createElement("div");
+  container.style.padding = "1rem";
+  container.style.fontFamily = "Arial, sans-serif";
+  container.style.fontSize = "1rem";
+
+  modes.forEach((description, index) => {
+    const entry = document.createElement("div");
+
+    const title = document.createElement("div");
+    title.textContent = `Mode ${index + 1}`;
+    title.style.fontWeight = "bold";
+
+    const desc = document.createElement("div");
+    desc.textContent = description;
+
+    entry.appendChild(title);
+    entry.appendChild(desc);
+
+    entry.style.marginBottom = "0.5rem";
+    entry.style.paddingBottom = "0.25rem";
+    if (!(index === modes.length - 1 && Footer.innerHTML === "")) {
+      entry.style.borderBottom = "1px solid #ccc";
+    }
+
+    container.appendChild(entry);
+  });
+
+  container.appendChild(Footer);
+
+  showPopup(container);
+  MathJax.typesetPromise();
+});
+
+function filterUniqueUnsolved(data) {
+  const isUnsolved = (row) => row.solved === "FALSE";
+  const unsolved = data.filter(isUnsolved);
+  const seen = new Set();
+  const unique = [];
+
+  for (const row of unsolved) {
+    const sortedDigits = row.number.split("").sort().join("");
+    if (!seen.has(sortedDigits)) {
+      seen.add(sortedDigits);
+      unique.push(row.number);
+    }
+  }
+
+  return unique;
+}
+
+function showFilteredUnsolved(numbers) {
+  if (numbers.length === 0) {
+    const container = document.createElement("div");
+    container.style.padding = "1rem";
+    container.style.fontFamily = "monospace";
+    container.style.fontSize = "1.2rem";
+
+    const header = document.createElement("div");
+    header.innerHTML =
+      "<strong><h3 style='margin-bottom: 0px;'>If you're reading this, it means all cases are solved and the thesis was proved<span style='vertical-align: 2px; font-size: 14px;'>(making it a theorem)</span>.</h3></strong><p style='vertical-align: 4px; margin-bottom: 0px; display: inline; font-size: 10px;'>(a shame, since I've coded A LOT of unsolved handling, and a full dynamic unsolved cases tab (this one, except you can't see the result))</p><br>Here are the hardest cases that were eventually solved (all by Martin ofc):";
+    header.style.marginBottom = "0.5rem";
+    header.style.borderBottom = "1px solid #ccc";
+    header.style.paddingBottom = "0.25rem";
+    container.appendChild(header);
+
+    const hardestNums = ["2227", "2247", "2368", "2379", "2447", "2489"];
+
+    hardestNums.forEach((num) => {
+      const entry = data.find((d) => d.number === num && d.solved === "TRUE");
+      if (!entry) return;
+
+      const wrapper = document.createElement("div");
+      wrapper.style.marginBottom = "0.5rem";
+      wrapper.style.borderBottom = "1px solid #ccc";
+      wrapper.style.paddingBottom = "0.25rem";
+
+      const span = document.createElement("span");
+      span.id = `answer-${num}`;
+      span.style.display = "none";
+      span.innerHTML = `\\( ${toLatex(entry.solution)} \\)`;
+
+      const link = document.createElement("a");
+      link.textContent = "Reveal answer";
+      link.style.color = "#007bff";
+      link.style.textDecoration = "none";
+      link.style.cursor = "pointer";
+      link.id = `reveal-${num}`;
+      link.onclick = function () {
+        span.style.display = "inline";
+        this.style.display = "none";
+        MathJax.typesetPromise([span]);
+        return false;
+      };
+
+      wrapper.innerHTML = `${num} &gt;&gt; `;
+      wrapper.appendChild(span);
+      wrapper.appendChild(link);
+
+      container.appendChild(wrapper);
+    });
+
+    const footnote = document.createElement("div");
+    footnote.innerHTML =
+      "<strong>Only one number is shown from each group of unsolved numbers that are permutations of the same digits.</strong>";
+    container.appendChild(footnote);
+
+    showPopup(container, true);
+    MathJax.typesetPromise();
+  } else {
+    const container = document.createElement("div");
+    container.style.padding = "1rem";
+    container.style.fontFamily = "monospace";
+    container.style.fontSize = "1.2rem";
+
+    const header = document.createElement("div");
+    header.innerHTML = "<h3>Here are all the unsolved cases:</h3>";
+    header.style.marginBottom = "0.5rem";
+    header.style.borderBottom = "1px solid #ccc";
+    header.style.paddingBottom = "0.25rem";
+    container.appendChild(entry);
+
+    numbers.forEach((num) => {
+      const entry = document.createElement("div");
+      entry.textContent = num;
+      entry.style.marginBottom = "0.5rem";
+      entry.style.borderBottom = "1px solid #ccc";
+      entry.style.paddingBottom = "0.25rem";
+      container.appendChild(entry);
+    });
+
+    const footer = document.createElement("div");
+    footer.innerHTML =
+      "<strong>Only one number is shown from each group of unsolved numbers that are permutations of the same digits.</strong>";
+    container.appendChild(footer);
+
+    showPopup(container, true);
+  }
+}
+
+document.getElementById("unsolved").addEventListener("click", () => {
+  const uniqueUnsolved = filterUniqueUnsolved(data);
+  showFilteredUnsolved(uniqueUnsolved);
+});
+
+document.getElementById("authors").addEventListener("click", () => {
+  const authors = [
+    {
+      name: "Me 🇵🇱",
+      description:
+        "Came up with the idea of this game, shared it to other people, made the database, wrote a solving algorithm, created and coded the website.<br>Total time spent on this website: ~35 hours.<br>Total time spent on the solver: ~20 hours.<br>Full idea formed on 29<sup style='font-size: 10px;'>th</sup> of May, 2025, but it started 1-2 months before, only talking about patterns in bus numbes like \"Oh! It's \\(201\\cdot x\\space(\\)e.g. \\(2814)\\)\" with OC",
+    },
+    {
+      name: "OC 🇵🇱",
+      description:
+        "Helped with the initial idea, provided some solutions, and sparked a bigger interest in the game within me by playing it with me.",
+    },
+    {
+      name: "HC 🇵🇱",
+      description:
+        "Came up with a precursor of Lemma 6 early on, when this was only a spoken game, that is - canceling any 2's.",
+    },
+    {
+      name: "HK 🇵🇱",
+      description:
+        "Helped shape a few things, solved some unsolved cases, and inspired me to make a full math proof.",
+    },
+    {
+      name: "FG 🇵🇱",
+      description: "Solved a lot of unsolved cases with me.",
+    },
+    {
+      name: "Martin 🇭🇰",
+      description: 
+        "Found new modes, solved a few unsolved cases, pointed me in the right direction for the unsolved numbers. Later he solved the last 6 numbers in 22 minutes! He also reviewed the math, lemmas and wording. This wouldn't be complete or possible without him.",
+    },
+  ];
+
+  const container = document.createElement("div");
+  container.style.padding = "1rem";
+  container.style.fontFamily = "Arial, sans-serif";
+  container.style.fontSize = "1rem";
+
+  authors.forEach((author, index) => {
+    const entry = document.createElement("div");
+
+    const name = document.createElement("div");
+    name.textContent = author.name;
+    name.style.fontWeight = "bold";
+
+    const desc = document.createElement("div");
+    desc.innerHTML = author.description;
+
+    entry.appendChild(name);
+    entry.appendChild(desc);
+
+    entry.style.marginBottom = "0.5rem";
+    entry.style.paddingBottom = "0.25rem";
+    //if (index !== authors.length - 1) {
+    //    entry.style.borderBottom = '1px solid #ccc';
+    //}
+    entry.style.borderBottom = "1px solid #ccc";
+
+    container.appendChild(entry);
+  });
+
+  const MathJaxDiv = document.createElement("div");
+  MathJaxDiv.innerHTML =
+    "<img src='mathjax.png' height='14px'> is used for rendering math with LaTeX. <a href='https://www.mathjax.org/' class='external-link' target='_blank'>Learn more</a>";
+  MathJaxDiv.style.marginBottom = "0.5rem";
+  MathJaxDiv.style.paddingBottom = "0.25rem";
+  MathJaxDiv.style.borderBottom = "1px solid #ccc";
+  container.appendChild(MathJaxDiv);
+
+  const otherArticles = document.createElement("div");
+  otherArticles.innerHTML =
+    "Interested by this? Check out <a href='https://arxiv.org/pdf/1502.03501' class='external-link' target='_blank'>this</a> and <a href='https://arxiv.org/pdf/1302.1479' class='external-link' target='_blank'>this</a>.";
+  container.appendChild(otherArticles);
+
+  showPopup(container);
+  MathJax.typesetPromise();
+});
+
+// Limit input to 4 digits
+const input = document.getElementById("numberInput");
+input.addEventListener("input", function () {
+  // Remove non-digit characters - just a fail-safe
+  this.value = this.value.replace(/\D/g, "");
+  // Limit to 4 digits
+  if (this.value.length > 4) {
+    this.value = this.value.slice(0, 4);
+  }
+});
+</script>
+</body>
+</html>
