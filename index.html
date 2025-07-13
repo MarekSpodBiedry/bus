@@ -157,12 +157,12 @@ ul {
     list-style-type: none;
 }
 
-li::before {
+/*li::before {
     content: "•";
     display: inline-block;
     width: 1em;
     margin-left: -1em;
-}
+}*/
 
 .customSelect {
     padding: 10px;
@@ -530,29 +530,11 @@ function showInfo() {
   showPopup(infoContent, true);
 }
 function mathToInfo() {
-  //document.querySelector(".popupContent").click();
-  //document.getElementById("info").click();
-
   closureImmunity = true;
-  document.getElementById("math-inside").innerHTML = `<h3>Bus numbers</h3>
-    The main objective of the game is to make an equation using all numbers, each exactly once, without adding any new numbers.<br>
-    The allowed operations are:
-    <ul>
-        <li>addition (+)</li>
-        <li>subtraction (-)</li>
-        <li>multiplication (*)</li>
-        <li>division (/)</li>
-        <li>factorial (!)</li>
-        <li>square root (√)</li>
-        <li>n<sup style="font-size: 10px;">th</sup> root (³√, ⁴√, etc.)</li>
-        <li>exponentiation (^)</li>
-        <li>parentheses ({[()]})</li>
-      </ul>
-      It all started with a simple game where we had to make an equation using all and only the digits - each exactly once - from the number of the bus we were on.`;
-    document.getElementById("popupOverlay").style.display = "flex";
-    setTimeout(function() {
-      closureImmunity = false;
-    }, 1);
+  showInfo();
+  setTimeout(function() {
+    closureImmunity = false;
+  }, 1);
 }
 document.getElementById("info").addEventListener("click", showInfo);
 
@@ -752,7 +734,7 @@ document.getElementById("authors").addEventListener("click", () => {
     {
       name: "Me 🇵🇱",
       description:
-        "Came up with the idea of this game, shared it to other people, made the database, wrote a solving algorithm, created and coded the website.<br>Total time spent on this website: ~35 hours.<br>Total time spent on the solver: ~20 hours.<br>Full idea formed on 29<sup style='font-size: 10px;'>th</sup> of May, 2025, but it started 1-2 months before, only talking about patterns in bus numbes like \"Oh! It's \\(201\\cdot x\\space(\\)e.g. \\(2814)\\)\" with OC",
+        "Came up with the idea of this game, shared it to other people, made the database, wrote a solving algorithm, created and coded the website.<br>Total time spent on this website: ~35 hours.<br>Total time spent on the solver: ~20 hours.<br>Full idea formed on 29<sup style='font-size: 10px;'>th</sup> of May, 2025, but it started 1-2 months before, only talking about patterns in bus numbes like \"Oh! It's \\(201\\cdot x\\space(\\)e.g. \\(2814)\\)\" with <strong>OC</strong>",
     },
     {
       name: "OC 🇵🇱",
@@ -762,7 +744,7 @@ document.getElementById("authors").addEventListener("click", () => {
     {
       name: "HC 🇵🇱",
       description:
-        "Came up with a precursor of Lemma 6 early on, when this was only a spoken game, that is - canceling any 2's.",
+        "Came up with a precursor of Lemma 6 early on, when this was only a spoken game, that is - canceling any \\(2\\).",
     },
     {
       name: "HK 🇵🇱",
@@ -818,7 +800,7 @@ document.getElementById("authors").addEventListener("click", () => {
 
   const otherArticles = document.createElement("div");
   otherArticles.innerHTML =
-    "Interested by this? Check out <a href='https://arxiv.org/pdf/1502.03501' class='external-link' target='_blank'>this</a> and <a href='https://arxiv.org/pdf/1302.1479' class='external-link' target='_blank'>this</a>.";
+    "Caught your interest? Check out <a href='https://arxiv.org/pdf/1502.03501' class='external-link' target='_blank'>this</a> and <a href='https://arxiv.org/pdf/1302.1479' class='external-link' target='_blank'>this</a>.";
   container.appendChild(otherArticles);
 
   showPopup(container);
