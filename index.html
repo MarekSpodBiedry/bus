@@ -776,7 +776,7 @@ document.getElementById("authors").addEventListener("click", () => {
     const entry = document.createElement("div");
 
     const name = document.createElement("div");
-    name.textContent = author.name;
+    name.innerHTML = author.name;
     name.style.fontWeight = "bold";
 
     const desc = document.createElement("div");
