@@ -14,6 +14,7 @@
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.5.0/css/flag-icon.min.css">
   <style>
 body {
     margin: 0;
@@ -175,6 +176,10 @@ ul {
     background-color: #f9f9f9;
 }
 
+.flag-icon {
+    border-radius: 5px;
+    border: 1px solid #aaa;
+}
   </style>
 </head>
 <body>
@@ -732,31 +737,31 @@ document.getElementById("unsolved").addEventListener("click", () => {
 document.getElementById("authors").addEventListener("click", () => {
   const authors = [
     {
-      name: "Me 🇵🇱",
+      name: "Me  <span class='flag-icon flag-icon-pl'></span>",
       description:
         "Came up with the idea of this game, shared it to other people, made the database, wrote a solving algorithm, created and coded the website.<br>Total time spent on this website: ~35 hours.<br>Total time spent on the solver: ~20 hours.<br>Full idea formed on 29<sup style='font-size: 10px;'>th</sup> of May, 2025, but it started 1-2 months before, only talking about patterns in bus numbes like \"Oh! It's \\(201\\cdot x\\space(\\)e.g. \\(2814)\\)\" with <strong>OC</strong>",
     },
     {
-      name: "OC 🇵🇱",
+      name: "OC  <span class='flag-icon flag-icon-pl'></span>",
       description:
         "Helped with the initial idea, provided some solutions, and sparked a bigger interest in the game within me by playing it with me.",
     },
     {
-      name: "HC 🇵🇱",
+      name: "HC  <span class='flag-icon flag-icon-pl'></span>",
       description:
         "Came up with a precursor of Lemma 6 early on, when this was only a spoken game, that is - canceling any \\(2\\).",
     },
     {
-      name: "HK 🇵🇱",
+      name: "HK  <span class='flag-icon flag-icon-pl'></span>",
       description:
         "Helped shape a few things, solved some unsolved cases, and inspired me to make a full math proof.",
     },
     {
-      name: "FG 🇵🇱",
+      name: "FG  <span class='flag-icon flag-icon-pl'></span>",
       description: "Solved a lot of unsolved cases with me.",
     },
     {
-      name: "Martin 🇭🇰",
+      name: "Martin  <span class='flag-icon flag-icon-hk'></span>",
       description: 
         "Found new modes, solved a few unsolved cases, pointed me in the right direction for the unsolved numbers. Later he solved the last 6 numbers in 22 minutes! He also reviewed the math, lemmas and wording. This wouldn't be complete or possible without him.",
     },
